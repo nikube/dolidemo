@@ -1,0 +1,91 @@
+# DoliDemo — Dolibarr 23.0.3 + réalistic demo data, ready for Coolify
+# ("Docker Compose" build pack, GitHub App source).
+#
+# Coolify fills the SERVICE_* magic variables automatically and routes the
+# public domain to the service that declares it (dolibarr, port 80).
+# Local run:  docker compose up -d  →  http://localhost:8090 (admin / admin)
+
+services:
+  dolibarr:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${DOLIDEMO_PORT:-8090}:80"
+    environment:
+      DOLI_DB_HOST: mariadb
+      DOLI_DB_NAME: dolibarr
+      DOLI_DB_USER: dolibarr
+      DOLI_DB_PASSWORD: ${SERVICE_PASSWORD_MARIADB:-dolibarr}
+      DOLI_ADMIN_LOGIN: ${DOLI_ADMIN_LOGIN:-admin}
+      DOLI_ADMIN_PASSWORD: ${DOLI_ADMIN_PASSWORD:-admin}
+      DOLI_URL_ROOT: ${SERVICE_FQDN_DOLIBARR:-http://localhost:8090}
+      DOLI_CRON: 0
+      DOLI_CRON_KEY: ${SERVICE_PASSWORD_CRON:-dolidemo-cron-key}
+      DOLI_INIT_DEMO: 0
+      DOLI_INIT_DEMO_REALISTIC: 1
+      DOLI_ACTIVATE_MODULES: modDoliModuleManager
+      DOLI_MODULE_ADDON_DIR_CUSTOM: 1
+      PHP_INI_DATE_TIMEZONE: Europe/Paris
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    volumes:
+      - dolibarr_documents:/var/www/documents
+      - dolibarr_custom:/var/www/html/custom
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:80"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+
+  # Pings the public cron endpoint every minute (Dolibarr scheduled jobs).
+  dolibarr-cron:
+    image: curlimages/curl:latest
+    restart: unless-stopped
+    depends_on:
+      dolibarr:
+        condition: service_healthy
+    environment:
+      CRON_KEY: ${SERVICE_PASSWORD_CRON:-dolidemo-cron-key}
+      ADMIN_LOGIN: ${DOLI_ADMIN_LOGIN:-admin}
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        while true; do
+          curl -fsS -m 300 -o /dev/null \
+            "http://dolibarr/public/cron/cron_run_jobs_by_url.php?securitykey=$${CRON_KEY}&userlogin=$${ADMIN_LOGIN}" \
+            && echo "[$$(date -Iseconds)] cron tick ok" \
+            || echo "[$$(date -Iseconds)] cron tick failed"
+          sleep 60
+        done
+
+  mariadb:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: dolibarr
+      MYSQL_USER: dolibarr
+      MYSQL_PASSWORD: ${SERVICE_PASSWORD_MARIADB:-dolibarr}
+      MYSQL_ROOT_PASSWORD: ${SERVICE_PASSWORD_MARIADBROOT:-root}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 20s
+      retries: 20
+
+  # SMTP sink: emails sent from the demo land here instead of real inboxes.
+  # Configure Dolibarr: MAIN_MAIL_SENDMODE=smtps, MAIN_MAIL_SMTP_SERVER=mailpit, port 1025.
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+volumes:
+  dolibarr_documents:
+  dolibarr_custom:
+  mariadb_data:
