@@ -20,8 +20,8 @@ docker compose logs -f dolibarr
 ## Déployer sur Coolify
 
 1. Nouvelle ressource → **Docker Compose** → source GitHub App → ce repo, branche `main`.
-2. Coolify génère `SERVICE_PASSWORD_*` et `SERVICE_FQDN_DOLIBARR` ; définir `DOLI_ADMIN_LOGIN` /
-   `DOLI_ADMIN_PASSWORD` dans les variables d'environnement (sinon admin/admin).
+2. Coolify génère `SERVICE_PASSWORD_*` et `SERVICE_FQDN_DOLIBARR` ; le login/mot de passe admin sont
+   `SERVICE_USER_DOLIBARR` / `SERVICE_PASSWORD_DOLIBARR` (générés, modifiables dans les variables d'environnement).
 3. Attribuer le domaine au service `dolibarr` (port 80). Mailpit : exposer le port 8025 sur un
    sous-domaine si on veut consulter les mails de la démo.
 4. Deploy. Chaque push sur `main` redéploie.

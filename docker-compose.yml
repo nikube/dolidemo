@@ -12,15 +12,19 @@ services:
     ports:
       - "${DOLIDEMO_PORT:-8090}:80"
     environment:
+      # Coolify magic vars: SERVICE_FQDN_DOLIBARR_80 binds the domain to port 80,
+      # SERVICE_URL_DOLIBARR / SERVICE_USER_* / SERVICE_PASSWORD_* are generated.
+      SERVICE_FQDN_DOLIBARR_80: ${SERVICE_FQDN_DOLIBARR_80:-}
       DOLI_DB_HOST: mariadb
       DOLI_DB_NAME: dolibarr
-      DOLI_DB_USER: dolibarr
-      DOLI_DB_PASSWORD: ${SERVICE_PASSWORD_MARIADB:-dolibarr}
-      DOLI_ADMIN_LOGIN: ${DOLI_ADMIN_LOGIN:-admin}
-      DOLI_ADMIN_PASSWORD: ${DOLI_ADMIN_PASSWORD:-admin}
-      DOLI_URL_ROOT: ${SERVICE_FQDN_DOLIBARR:-http://localhost:8090}
+      DOLI_DB_USER: ${SERVICE_USER_MYSQL:-dolibarr}
+      DOLI_DB_PASSWORD: ${SERVICE_PASSWORD_MYSQL:-dolibarr}
+      DOLI_ADMIN_LOGIN: ${SERVICE_USER_DOLIBARR:-admin}
+      DOLI_ADMIN_PASSWORD: ${SERVICE_PASSWORD_DOLIBARR:-admin}
+      DOLI_URL_ROOT: ${SERVICE_URL_DOLIBARR:-http://localhost:8090}
+      DOLI_COMPANY_NAME: ${DOLI_COMPANY_NAME:-DoliDemo}
       DOLI_CRON: 0
-      DOLI_CRON_KEY: ${SERVICE_PASSWORD_CRON:-dolidemo-cron-key}
+      DOLI_CRON_KEY: ${SERVICE_PASSWORD_CRONKEY:-dolidemo-cron-key}
       DOLI_INIT_DEMO: 0
       DOLI_INIT_DEMO_REALISTIC: 1
       DOLI_ACTIVATE_MODULES: modCron,modDoliModuleManager
@@ -32,6 +36,7 @@ services:
     volumes:
       - dolibarr_documents:/var/www/documents
       - dolibarr_custom:/var/www/html/custom
+      - dolibarr_conf:/var/www/html/conf
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:80"]
       interval: 10s
@@ -46,8 +51,8 @@ services:
       dolibarr:
         condition: service_healthy
     environment:
-      CRON_KEY: ${SERVICE_PASSWORD_CRON:-dolidemo-cron-key}
-      ADMIN_LOGIN: ${DOLI_ADMIN_LOGIN:-admin}
+      CRON_KEY: ${SERVICE_PASSWORD_CRONKEY:-dolidemo-cron-key}
+      ADMIN_LOGIN: ${SERVICE_USER_DOLIBARR:-admin}
     entrypoint: /bin/sh
     command:
       - -c
@@ -65,9 +70,9 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: dolibarr
-      MYSQL_USER: dolibarr
-      MYSQL_PASSWORD: ${SERVICE_PASSWORD_MARIADB:-dolibarr}
-      MYSQL_ROOT_PASSWORD: ${SERVICE_PASSWORD_MARIADBROOT:-root}
+      MYSQL_USER: ${SERVICE_USER_MYSQL:-dolibarr}
+      MYSQL_PASSWORD: ${SERVICE_PASSWORD_MYSQL:-dolibarr}
+      MYSQL_ROOT_PASSWORD: ${SERVICE_PASSWORD_ROOT:-root}
     volumes:
       - mariadb_data:/var/lib/mysql
     healthcheck:
@@ -82,10 +87,12 @@ services:
     image: axllent/mailpit:latest
     restart: unless-stopped
     environment:
+      SERVICE_FQDN_MAILPIT_8025: ${SERVICE_FQDN_MAILPIT_8025:-}
       MP_SMTP_AUTH_ACCEPT_ANY: 1
       MP_SMTP_AUTH_ALLOW_INSECURE: 1
 
 volumes:
   dolibarr_documents:
   dolibarr_custom:
+  dolibarr_conf:
   mariadb_data:
