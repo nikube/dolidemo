@@ -23,6 +23,13 @@ RUN set -eux; \
     chown -R www-data:www-data /opt/extra-custom; \
     rm -rf /tmp/dmm
 
+COPY --chown=www-data:www-data set-cron-key.php /var/www/html/install/set-cron-key.php
+COPY docker-dolidemo.sh /usr/local/bin/docker-dolidemo.sh
+RUN chmod +x /usr/local/bin/docker-dolidemo.sh
+
 ENV DOLI_INIT_DEMO=0 \
     DOLI_INIT_DEMO_REALISTIC=1 \
-    DOLI_ACTIVATE_MODULES=modDoliModuleManager
+    DOLI_ACTIVATE_MODULES=modCron,modDoliModuleManager
+
+ENTRYPOINT ["docker-dolidemo.sh"]
+CMD ["apache2-foreground"]

@@ -23,7 +23,7 @@ services:
       DOLI_CRON_KEY: ${SERVICE_PASSWORD_CRON:-dolidemo-cron-key}
       DOLI_INIT_DEMO: 0
       DOLI_INIT_DEMO_REALISTIC: 1
-      DOLI_ACTIVATE_MODULES: modDoliModuleManager
+      DOLI_ACTIVATE_MODULES: modCron,modDoliModuleManager
       DOLI_MODULE_ADDON_DIR_CUSTOM: 1
       PHP_INI_DATE_TIMEZONE: Europe/Paris
     depends_on:
